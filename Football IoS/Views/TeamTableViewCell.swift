@@ -7,14 +7,16 @@
 
 import UIKit
 
+protocol TeamTableViewCellDelegate: AnyObject {
+    func didTapPlayBack(for team : Team)
+}
+
 class TeamTableViewCell: UITableViewCell {
     
     static let cellId = "TeamTableViewCell"
     
-    
     // UI
     // Full Container
-    
     private lazy var containerView : UIView = {
         let view = UIView()
         view.translatesAutoresizingMaskIntoConstraints = false
@@ -87,20 +89,35 @@ class TeamTableViewCell: UITableViewCell {
         return infoLabel
     }()
     
-    // bordfer radius
+    private weak var delegate : TeamTableViewCellDelegate?
+    private var team : Team?
+    
+    // border radius
     override func layoutSubviews() {
         super.layoutSubviews()
         containerView.layer.cornerRadius = 10
     }
     
-    func configure() {
-        containerView.backgroundColor = TeamType.arsenal.background
-        iconImageView.image = TeamType.manchesterUnited.badge
-        playBackButtonView.setImage(UIImage(systemName: "play.circle.fill",withConfiguration: UIImage.SymbolConfiguration(pointSize: 32)), for: .normal)
-        nameLabel.text = "Manchester United"
-        foundLabel.text = "1826"
-        jobLabel.text = "Current Manager :  Mahfuz Akib"
-        infoLabel.text = "Manchester United a good club, here is for description a demo app and fixed size data temporary"
+    override func prepareForReuse() {
+        super.prepareForReuse()
+        self.team = nil
+        self.delegate = nil
+        self.containerView.subviews.forEach({$0.removeFromSuperview()})
+    }
+    
+    func configure(with item: Team, deligate : TeamTableViewCellDelegate) {
+        self.delegate = deligate
+        self.team = item
+        
+        playBackButtonView.addTarget(self, action: #selector(didTapPlayBack), for: .touchUpInside)
+        
+        containerView.backgroundColor = item.id.background
+        iconImageView.image = item.id.badge
+        playBackButtonView.setImage(item.isPlaying ? Assets.pause : Assets.play, for: .normal)
+        nameLabel.text = item.name
+        foundLabel.text = item.founded
+        jobLabel.text = "Current \(item.manager.job.rawValue) :  \(item.manager.name)"
+        infoLabel.text = item.info
         
         self.contentView.addSubview(containerView)
         
@@ -136,5 +153,11 @@ class TeamTableViewCell: UITableViewCell {
             playBackButtonView.trailingAnchor.constraint(equalTo : containerView.trailingAnchor, constant: -8),
             playBackButtonView.centerYAnchor.constraint(equalTo : containerView.centerYAnchor),
         ])
+    }
+    
+    @objc func didTapPlayBack() {
+        if let team = team {
+            delegate?.didTapPlayBack(for: team)
+        }
     }
 }
